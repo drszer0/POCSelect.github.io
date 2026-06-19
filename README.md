@@ -90,12 +90,11 @@ data/pocselection.csv
 Your project folder should look like this:
 
 ```text
-project-folder/
-├── index.html
-├── styles.css
-├── script.js
-└── data/
-    └── pocselection.csv
+index.html
+styles.css
+script.js
+data/
+   └── pocselection.csv
 ```
 
 ## Running locally

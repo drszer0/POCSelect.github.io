@@ -24,10 +24,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const calculateBtn = document.getElementById("calculateBtn");
 
   const weights = {
-    gpa: 0.20,
-    pfa: 0.10,
+    gpa: 0.25,
+    pfa: 0.15,
     afoqt: 0.20,
-    commanderRanking: 0.50,
+    commanderRanking: 0.40,
   };
 
   const commanderRankingLabels = {
@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const majorTypeLabels = {
     tech: "Tech Major",
     nontech: "Non-Tech Major",
-    unknown: "Unknown Major Type",
+    unknown: "Unknown",
   };
 
   let pocSelectionData = [];
@@ -62,6 +62,31 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const value = Number(input.value);
     return Number.isFinite(value) ? value : fallback;
+  }
+
+  function normalizeKey(key) {
+    return String(key || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+  }
+
+  function getField(row, possibleNames) {
+    const normalizedRow = {};
+
+    Object.keys(row).forEach(function (key) {
+      normalizedRow[normalizeKey(key)] = row[key];
+    });
+
+    for (const name of possibleNames) {
+      const cleanName = normalizeKey(name);
+
+      if (normalizedRow[cleanName] !== undefined) {
+        return normalizedRow[cleanName];
+      }
+    }
+
+    return "";
   }
 
   function parseCsvLine(line) {
@@ -114,19 +139,187 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  function normalizeEaSelect(value) {
+    const text = String(value || "").trim().toLowerCase();
+
+    if (
+      text.includes("waiting") ||
+      text.includes("pending") ||
+      text === ""
+    ) {
+      return null;
+    }
+
+    if (
+      text.includes("non-select") ||
+      text.includes("non select") ||
+      text.includes("rejected") ||
+      text.includes("reject") ||
+      text.includes("no ea") ||
+      text === "no" ||
+      text === "0"
+    ) {
+      return 0;
+    }
+
+    if (
+      text === "ea" ||
+      text.includes("space ea") ||
+      text.includes("alt ea") ||
+      text.includes("selected") ||
+      text === "yes" ||
+      text === "1"
+    ) {
+      return 1;
+    }
+
+    return null;
+  }
+
+  function normalizeMajorType(value) {
+    const text = String(value || "").trim().toLowerCase();
+
+    if (text.includes("non")) {
+      return "nontech";
+    }
+
+    if (text.includes("tech")) {
+      return "tech";
+    }
+
+    return "unknown";
+  }
+
+  function normalizeCommanderTier(value) {
+    const text = String(value || "").trim().toLowerCase();
+
+    if (text.includes("top")) {
+      return "top";
+    }
+
+    if (text.includes("middle") || text.includes("mid")) {
+      return "middle";
+    }
+
+    if (text.includes("bottom")) {
+      return "bottom";
+    }
+
+    return "";
+  }
+
+  function normalizeFormRow(row) {
+    return {
+      year: Number(
+        getField(row, [
+          "Year",
+          "Year ",
+          "selection_year",
+        ])
+      ),
+
+      eaReceived: normalizeEaSelect(
+        getField(row, [
+          "EA Select",
+          "outcome_raw",
+          "ea_received",
+        ])
+      ),
+
+      majorType: normalizeMajorType(
+        getField(row, [
+          "Tech/Non-Tech",
+          "major_type",
+          "major_raw",
+        ])
+      ),
+
+      gpa: Number(
+        getField(row, [
+          "CGPA (cumulative GPA)",
+          "CGPA  (cumulative GPA)",
+          "gpa",
+        ])
+      ),
+
+      pfa: Number(
+        getField(row, [
+          "PFA",
+          "pfa",
+        ])
+      ),
+
+      afoqt: Number(
+        getField(row, [
+          "AFOQT (Academic Aptitude score)",
+          "AFOQT (Academic Aptitude score)  ",
+          "AFOQT",
+          "afoqt_aa",
+          "AA",
+        ])
+      ),
+
+      commanderTier: normalizeCommanderTier(
+        getField(row, [
+          "RSS (Commanders Ranking)",
+          "RSS (Commanders Ranking) ",
+          "Commander Rank",
+          "commander_tier",
+          "commander_rank_raw",
+        ])
+      ),
+
+      ratedStatus: getField(row, [
+        "Rated/non-Rated",
+        "Rated",
+        "rated_status",
+      ]),
+
+      classSize: Number(
+        getField(row, [
+          "AS Class Size (optional)*",
+          "AS Class Size  (optional)*",
+          "class_size_exact",
+        ])
+      ),
+    };
+  }
+
   async function loadPocSelectionData() {
     try {
+      const csvUrl = new URL(CSV_PATH, window.location.href).href;
+      console.log("Trying to load CSV from:", csvUrl);
+
       const response = await fetch(CSV_PATH);
 
       if (!response.ok) {
-        throw new Error("CSV file could not be loaded");
+        throw new Error("CSV file could not be loaded. Status: " + response.status);
       }
 
       const csvText = await response.text();
-      pocSelectionData = parseCsv(csvText);
+      const rawRows = parseCsv(csvText);
+
+      console.log("Raw CSV rows:", rawRows.length);
+      console.log("CSV headers:", Object.keys(rawRows[0] || {}));
+
+      pocSelectionData = rawRows
+        .map(normalizeFormRow)
+        .filter(function (row) {
+          return (
+            row.eaReceived !== null &&
+            Number.isFinite(row.gpa) &&
+            Number.isFinite(row.pfa) &&
+            Number.isFinite(row.afoqt) &&
+            row.commanderTier !== ""
+          );
+        });
+
+      console.log("Usable survey rows:", pocSelectionData.length);
+      console.log("First usable row:", pocSelectionData[0]);
+
       csvLoadStatus = "loaded";
     } catch (error) {
-      console.warn("Could not load POC selection CSV:", error);
+      console.warn("Could not load CSV:", error);
       pocSelectionData = [];
       csvLoadStatus = "failed";
     }
@@ -156,6 +349,103 @@ document.addEventListener("DOMContentLoaded", function () {
     return {
       estimatedRank,
       rssScore: clamp(rssScore, 0, 100),
+    };
+  }
+
+  function tierDistance(tierA, tierB) {
+    const tierValues = {
+      top: 1,
+      middle: 2,
+      bottom: 3,
+    };
+
+    if (!tierValues[tierA] || !tierValues[tierB]) return 1;
+    return Math.abs(tierValues[tierA] - tierValues[tierB]);
+  }
+
+  function getSurveyEstimate(candidate) {
+    const rows = pocSelectionData;
+
+    if (rows.length === 0) {
+      return null;
+    }
+
+    const scoredRows = rows.map(function (row) {
+      const gpaDiff = Math.abs(candidate.cgpa - row.gpa) / 4.0;
+      const pfaDiff = Math.abs(candidate.pfa - row.pfa) / 100;
+      const afoqtDiff = Math.abs(candidate.afoqt - row.afoqt) / 99;
+      const commanderDiff =
+        tierDistance(candidate.commanderRanking, row.commanderTier) / 2;
+
+      let majorDiff = 0;
+
+      if (row.majorType === "unknown" || candidate.majorType === "unknown") {
+        majorDiff = 0.5;
+      } else if (row.majorType !== candidate.majorType) {
+        majorDiff = 1;
+      }
+
+      const distance =
+        gpaDiff * 0.30 +
+        pfaDiff * 0.20 +
+        afoqtDiff * 0.25 +
+        commanderDiff * 0.20 +
+        majorDiff * 0.05;
+
+      const similarityWeight = Math.exp(-8 * distance);
+
+      return {
+        eaReceived: row.eaReceived,
+        distance,
+        similarityWeight,
+      };
+    });
+
+    scoredRows.sort(function (a, b) {
+      return a.distance - b.distance;
+    });
+
+    const nearestRows = scoredRows.slice(0, 15);
+
+    const totalWeight = nearestRows.reduce(function (sum, row) {
+      return sum + row.similarityWeight;
+    }, 0);
+
+    if (nearestRows.length < 5 || totalWeight === 0) {
+      return null;
+    }
+
+    const weightedEaRate =
+      nearestRows.reduce(function (sum, row) {
+        return sum + row.eaReceived * row.similarityWeight;
+      }, 0) / totalWeight;
+
+    const overallEaRate =
+      rows.reduce(function (sum, row) {
+        return sum + row.eaReceived;
+      }, 0) / rows.length;
+
+    const selectedCount = nearestRows.reduce(function (sum, row) {
+      return sum + row.eaReceived;
+    }, 0);
+
+    let blendWeight = 0.25;
+
+    if (nearestRows.length >= 10) {
+      blendWeight = 0.35;
+    }
+
+    if (nearestRows.length >= 15) {
+      blendWeight = 0.40;
+    }
+
+    return {
+      surveyProbability: clamp(weightedEaRate, 0.01, 0.99),
+      overallEaRate: clamp(overallEaRate, 0.01, 0.99),
+      blendWeight,
+      recordsUsed: nearestRows.length,
+      selectedCount,
+      totalRecords: rows.length,
     };
   }
 
@@ -191,116 +481,6 @@ document.addEventListener("DOMContentLoaded", function () {
     return {
       rating: "1/5",
       label: "Unlikely to receive an EA",
-    };
-  }
-
-  function tierDistance(tierA, tierB) {
-    const tierValues = {
-      top: 1,
-      middle: 2,
-      bottom: 3,
-    };
-
-    if (!tierValues[tierA] || !tierValues[tierB]) return 1;
-    return Math.abs(tierValues[tierA] - tierValues[tierB]);
-  }
-
-  function getSurveyEstimate(candidate) {
-    const rows = pocSelectionData.filter(function (row) {
-      return (
-        (row.ea_received === "0" || row.ea_received === "1") &&
-        row.gpa !== "" &&
-        row.pfa !== "" &&
-        row.afoqt_aa !== "" &&
-        row.commander_tier !== ""
-      );
-    });
-
-    if (rows.length === 0) {
-      return null;
-    }
-
-    const scoredRows = rows.map(function (row) {
-      const rowGpa = Number(row.gpa);
-      const rowPfa = Number(row.pfa);
-      const rowAfoqt = Number(row.afoqt_aa);
-      const rowTier = row.commander_tier;
-      const rowMajor = row.major_type || "unknown";
-
-      const gpaDiff = Math.abs(candidate.cgpa - rowGpa) / 4.0;
-      const pfaDiff = Math.abs(candidate.pfa - rowPfa) / 100;
-      const afoqtDiff = Math.abs(candidate.afoqt - rowAfoqt) / 99;
-      const commanderDiff = tierDistance(candidate.commanderRanking, rowTier) / 2;
-
-      let majorDiff = 0;
-
-      if (rowMajor === "unknown" || candidate.majorType === "unknown") {
-        majorDiff = 0.5;
-      } else if (rowMajor !== candidate.majorType) {
-        majorDiff = 1;
-      }
-
-      const distance =
-        gpaDiff * 0.30 +
-        pfaDiff * 0.20 +
-        afoqtDiff * 0.25 +
-        commanderDiff * 0.20 +
-        majorDiff * 0.05;
-
-      const similarityWeight = Math.exp(-8 * distance);
-
-      return {
-        eaReceived: Number(row.ea_received),
-        distance,
-        similarityWeight,
-      };
-    });
-
-    scoredRows.sort(function (a, b) {
-      return a.distance - b.distance;
-    });
-
-    const nearestRows = scoredRows.slice(0, 15);
-
-    const totalWeight = nearestRows.reduce(function (sum, row) {
-      return sum + row.similarityWeight;
-    }, 0);
-
-    if (nearestRows.length < 5 || totalWeight === 0) {
-      return null;
-    }
-
-    const weightedEaRate =
-      nearestRows.reduce(function (sum, row) {
-        return sum + row.eaReceived * row.similarityWeight;
-      }, 0) / totalWeight;
-
-    const overallEaRate =
-      rows.reduce(function (sum, row) {
-        return sum + Number(row.ea_received);
-      }, 0) / rows.length;
-
-    const selectedCount = nearestRows.reduce(function (sum, row) {
-      return sum + row.eaReceived;
-    }, 0);
-
-    let blendWeight = 0.25;
-
-    if (nearestRows.length >= 10) {
-      blendWeight = 0.35;
-    }
-
-    if (nearestRows.length >= 15) {
-      blendWeight = 0.40;
-    }
-
-    return {
-      surveyProbability: clamp(weightedEaRate, 0.01, 0.99),
-      overallEaRate: clamp(overallEaRate, 0.01, 0.99),
-      blendWeight,
-      recordsUsed: nearestRows.length,
-      selectedCount,
-      totalRecords: rows.length,
     };
   }
 
@@ -386,12 +566,12 @@ document.addEventListener("DOMContentLoaded", function () {
         <br>
         <strong>Survey Data Adjustment</strong><br>
         CSV data could not be loaded. Using formula-only estimate.<br>
-        Make sure <code>data/pocselection.csv</code> exists and the site is running through GitHub Pages or a local server.<br>
+        Make sure <code>data/pocselection.csv</code> exists and the site is running through GitHub Pages or Live Server.<br>
       `;
     } else {
       surveyBreakdown = `
         <br>
-        <strong>$Survey Data Adjustment</strong><br>
+        <strong>Survey Data Adjustment</strong><br>
         Not enough usable survey records were found. Using formula-only estimate.<br>
       `;
     }
@@ -410,25 +590,36 @@ document.addEventListener("DOMContentLoaded", function () {
     results.breakdown.innerHTML = `
       <strong>Breakdown for ${year}</strong><br><br>
 
-      GPA Score: ${gpaScore.toFixed(1)} x ${weights.gpa * 100}% = ${(gpaScore * weights.gpa).toFixed(1)}<br>
-      PFA Score: ${pfaScore.toFixed(1)} x ${weights.pfa * 100}% = ${(pfaScore * weights.pfa).toFixed(1)}<br>
-      AFOQT Score: ${afoqtScore.toFixed(1)} x ${weights.afoqt * 100}% = ${(afoqtScore * weights.afoqt).toFixed(1)}<br>
+      <strong>Weighted Calculated Stats</strong><br>
+      GPA Score: ${gpaScore.toFixed(1)} / 100
+      <span>(25% of OMS)</span> = ${(gpaScore * weights.gpa).toFixed(1)} points<br>
+
+      PFA Score: ${pfaScore.toFixed(1)} / 100
+      <span>(15% of OMS)</span> = ${(pfaScore * weights.pfa).toFixed(1)} points<br>
+
+      AFOQT Score: ${afoqtScore.toFixed(1)} / 100
+      <span>(20% of OMS)</span> = ${(afoqtScore * weights.afoqt).toFixed(1)} points<br>
 
       Commander's Ranking: ${commanderRankingLabels[commanderRanking]}<br>
-      Estimated Ranking Used: ${estimatedRank} of ${classSize}<br>
-      RSS Score: ${commanderScore.toFixed(1)} x ${weights.commanderRanking * 100}% = ${(commanderScore * weights.commanderRanking).toFixed(1)}<br><br>
+      Estimated DCR Rank Used: ${estimatedRank} of ${classSize}<br>
+      RSS Score: ${commanderScore.toFixed(1)} / 100
+      <span>(40% of OMS)</span> = ${(commanderScore * weights.commanderRanking).toFixed(1)} points<br><br>
 
-      Major Type: ${majorTypeLabels[majorType]}<br><br>
+      <strong>Total</strong><br>
+      Order of Merit Score: ${orderOfMeritRounded} / 100<br><br>
 
-      Order of Merit Score: ${orderOfMeritRounded}<br>
-      National Selection Rate Used: ${nationalRate}%<br>
-      Estimated EA Selection Chance: ${chanceRounded}%<br>
+      <strong>Other Inputs</strong><br>
+      Major Type: ${majorTypeLabels[majorType]}<br>
+      National Selection Rate Used: ${nationalRate}%<br><br>
+
+      <strong>Estimated EA Selection Chance</strong><br>
+      ${chanceRounded}%<br>
       ${surveyBreakdown}<br>
 
       <strong>EA Likelihood Rating: ${eaLikelihood.rating}</strong><br>
       ${eaLikelihood.label}<br><br>
 
-      <em>This is an unofficial estimate. The 2026 data is self-reported and should be treated as a rough trend, not an official prediction.</em>
+      <em>This is an unofficial estimate. Survey data is self-reported and should be treated as a rough trend, not an official prediction.</em>
     `;
   }
 
