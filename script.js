@@ -415,7 +415,7 @@ document.addEventListener("DOMContentLoaded", function () {
       AFOQT Score: ${afoqtScore.toFixed(1)} x ${weights.afoqt * 100}% = ${(afoqtScore * weights.afoqt).toFixed(1)}<br>
 
       Commander's Ranking: ${commanderRankingLabels[commanderRanking]}<br>
-      Estimated DCR Rank Used: ${estimatedRank} of ${classSize}<br>
+      Estimated Ranking Used: ${estimatedRank} of ${classSize}<br>
       RSS Score: ${commanderScore.toFixed(1)} x ${weights.commanderRanking * 100}% = ${(commanderScore * weights.commanderRanking).toFixed(1)}<br><br>
 
       Major Type: ${majorTypeLabels[majorType]}<br><br>
