@@ -22,10 +22,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const calculateBtn = document.getElementById("calculateBtn");
 
   const weights = {
-    gpa: 0.25,
-    pfa: 0.15,
+    gpa: 0.20,
+    pfa: 0.10,
     afoqt: 0.20,
-    commanderRanking: 0.40,
+    commanderRanking: 0.50,
   };
 
   const commanderRankingLabels = {
@@ -176,9 +176,9 @@ document.addEventListener("DOMContentLoaded", function () {
     results.breakdown.innerHTML = `
       <strong>Breakdown for ${year}</strong><br><br>
 
-      GPA Score: ${gpaScore.toFixed(1)} x 25% = ${(gpaScore * weights.gpa).toFixed(1)}<br>
-      PFA Score: ${pfaScore.toFixed(1)} x 15% = ${(pfaScore * weights.pfa).toFixed(1)}<br>
-      AFOQT Score: ${afoqtScore.toFixed(1)} x 20% = ${(afoqtScore * weights.afoqt).toFixed(1)}<br>
+      GPA Score: ${gpaScore.toFixed(1)} x ${weights.gpa * 100}% = ${(gpaScore * weights.gpa).toFixed(1)}<br>
+      PFA Score: ${pfaScore.toFixed(1)} x ${weights.pfa * 100}% = ${(pfaScore * weights.pfa).toFixed(1)}<br>
+      AFOQT Score: ${afoqtScore.toFixed(1)} x ${weights.afoqt * 100}% = ${(afoqtScore * weights.afoqt).toFixed(1)}<br>
 
       Commander's Ranking: ${commanderRankingLabels[commanderRanking]}<br>
       Estimated DCR Rank Used: ${estimatedRank} of ${classSize}<br>
