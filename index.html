@@ -3,99 +3,94 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AFROTC POC Selection Chance Calculator</title>
+  <title>AFROTC POC Selection Estimator</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
-  <main class="container">
-    <section class="hero">
-      <p class="eyebrow">Unofficial AFROTC Tool</p>
-      <h1>POC Selection Chance Calculator</h1>
-      <p>
-        Estimate an Order of Merit Score and projected POC selection chance using
-        year, detachment size, cGPA, PFA, AFOQT, commander ranking, and the national
-        selection rate. Please note, every year is different and this tool is a simplified model that does not capture all the complexities of the actual selection process. Use it for general guidance and to identify areas for improvement. Good luck!
-      </p>
-    </section>
+  <div class="container">
+    <h1>AFROTC POC Selection Estimator</h1>
 
-    <section class="calculator-card">
-      <div class="grid">
-        <div class="field">
-          <label for="year">Selection Year</label>
-          <input type="number" id="year" value="2026" min="2020" max="2100" />
-        </div>
+    <p>
+      This unofficial calculator estimates an Order of Merit Score and potential EA
+      selection chance using self-entered AFROTC-related data.
+    </p>
 
-        <div class="field">
-          <label for="detSize">Detachment Size (work in progress)</label>
-          <input type="number" id="detSize" value="50" min="1" />
-        </div>
-
-        <div class="field">
-          <label for="cgpa">Cumulative GPA</label>
-          <input type="number" id="cgpa" value="3.40" min="0" max="4" step="0.01" />
-        </div>
-
-        <div class="field">
-          <label for="pfa">PFA Score</label>
-          <input type="number" id="pfa" value="92" min="0" max="100" step="0.1" />
-        </div>
-
-        <div class="field">
-          <label for="afoqt">AFOQT Score</label>
-          <input type="number" id="afoqt" value="70" min="0" max="99" step="1" />
-        </div>
-
-        <div class="field">
-          <label for="commanderRanking">Commander's Ranking</label>
-          <select id="commanderRanking">
-            <option value="top">Top Third</option>
-            <option value="middle" selected>Middle Third</option>
-            <option value="bottom">Bottom Third</option>
-          </select>
-        </div>
-
-        <div class="field full-width">
-          <label for="nationalRate">National Selection Rate (%) (estimate needs data.)</label>
-          <input type="number" id="nationalRate" value="70" min="1" max="99" step="1" />
-        </div>
+    <div class="grid">
+      <div>
+        <label for="year">Selection Year</label>
+        <input type="number" id="year" value="2026" min="2020" max="2100" />
       </div>
 
-      <button id="calculateBtn" type="button">Calculate</button>
-    </section>
+      <div>
+        <label for="detSize">Class Size</label>
+        <input type="number" id="detSize" min="1" />
+      </div>
 
-    <section class="results" id="results" aria-live="polite">
+      <div>
+        <label for="cgpa">Cumulative GPA</label>
+        <input type="number" id="cgpa" min="0" max="4" step="0.01" />
+      </div>
+
+      <div>
+        <label for="pfa">PFA Score</label>
+        <input type="number" id="pfa" min="0" max="100" step="0.1" />
+      </div>
+
+      <div>
+        <label for="afoqt">AFOQT Score</label>
+        <input type="number" id="afoqt" min="0" max="99" step="1" />
+      </div>
+
+      <div>
+        <label for="commanderRanking">Commander Ranking</label>
+        <select id="commanderRanking">
+          <option value="top">Top Third</option>
+          <option value="middle" selected>Middle Third</option>
+          <option value="bottom">Bottom Third</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="majorType">Major Type (work in progress requires additional data)</label>
+        <select id="majorType">
+          <option value="nontech">Non-Tech Major</option>
+          <option value="tech">Tech Major</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="nationalRate">National Selection Rate (%)</label>
+        <input type="number" id="nationalRate" value="70" min="1" max="99" step="1" />
+      </div>
+    </div>
+
+    <button id="calculateBtn" type="button">Calculate</button>
+
+    <div class="results" id="results" style="display: none;">
       <h2>Results</h2>
 
-      <div class="result-block">
-        <div>
-          <p class="result-label">Order of Merit Score</p>
-          <p class="result-number" id="omsResult">0.0</p>
-        </div>
-        <div class="bar" aria-hidden="true">
-          <div class="bar-fill" id="omsBar"></div>
-        </div>
+      <p>Order of Merit Score</p>
+      <div class="result-number" id="omsResult">0</div>
+      <div class="bar">
+        <div class="bar-fill" id="omsBar"></div>
       </div>
 
-      <div class="result-block">
-        <div>
-          <p class="result-label">Estimated POC Selection Chance</p>
-          <p class="result-number" id="chanceResult">0.0%</p>
-        </div>
-        <div class="bar" aria-hidden="true">
-          <div class="bar-fill" id="chanceBar"></div>
-        </div>
+      <p>Estimated EA Selection Chance</p>
+      <div class="result-number" id="chanceResult">0%</div>
+      <div class="bar">
+        <div class="bar-fill" id="chanceBar"></div>
       </div>
 
       <div class="breakdown" id="breakdown"></div>
-    </section>
+    </div>
 
-    <section class="warning">
-      <strong>Important:</strong> This is not an official AFROTC calculator. Actual POC
-      selection depends on national board needs, commander input, enrollment allocations,
-      medical qualification, DoDMERB status, major, fiscal-year needs, and other factors
-      not represented here.
-    </section>
-  </main>
+    <div class="warning">
+      This is not an official AFROTC calculator. Actual EA/POC selection depends on
+      national board needs, commander input, enrollment allocations, medical status,
+      major, fiscal-year needs, and other factors not represented here.
+    </div>
+  </div>
 
   <script src="script.js"></script>
 </body>
