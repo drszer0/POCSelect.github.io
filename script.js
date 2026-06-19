@@ -21,10 +21,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const calculateBtn = document.getElementById("calculateBtn");
 
   const weights = {
-    gpa: 0.25,
-    pfa: 0.15,
+    gpa: 0.20,
+    pfa: 0.10,
     afoqt: 0.20,
-    commanderRanking: 0.40,
+    commanderRanking: 0.45,
   };
 
   const commanderRankingScores = {
