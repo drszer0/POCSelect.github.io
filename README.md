@@ -18,7 +18,7 @@ The calculator uses:
 current data uses info from these following web pages 
 
 https://www.reddit.com/r/AFROTC/comments/1rpgde5/for_those_who_just_got_eas_what_were_your_stats/ #current CSV information
-please recognise these stats will be more so skewed toward non-ea selects.
+please recognise people who report these stats are more likely to be selects over non-selects.
 
 
 
